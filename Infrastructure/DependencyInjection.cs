@@ -9,7 +9,6 @@ namespace Infrastructure;
 
 public static class DependencyInjection
 {
-
     public static IServiceCollection AddInfrstructure(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -20,8 +19,7 @@ public static class DependencyInjection
                 configuration.GetConnectionString("DefaultConnection")));
 
         services.AddScoped<IProjectRepository, ProjectRepository>();
+        services.AddScoped<ITaskRepository, TaskRepository>();
         return services;
     }
-
-
 }

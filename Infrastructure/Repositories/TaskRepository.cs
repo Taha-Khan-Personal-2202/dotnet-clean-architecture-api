@@ -10,7 +10,7 @@ namespace Infrastructure.Repositories
 
         public async Task AddAsync(ProjectTask project)
         {
-            _context.Tasks.Add(project);
+            await _context.Tasks.AddAsync(project);
             await _context.SaveChangesAsync();
         }
 
@@ -22,17 +22,25 @@ namespace Infrastructure.Repositories
 
         public async Task<List<ProjectTask>> GetAllAsync()
         {
-            return await _context.Tasks.ToListAsync();
+            return await _context.Tasks
+                .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync();
         }
 
         public async Task<ProjectTask?> GetByIdAsync(Guid id)
         {
-            return await _context.Tasks.FirstOrDefaultAsync(f => f.Id == id);
+            return await _context.Tasks
+                .FirstOrDefaultAsync(p => p.Id == id);
         }
 
-        public Task<bool> UpdateAsync(ProjectTask project)
+        public async Task UpdateAsync(ProjectTask project)
         {
-            throw new NotImplementedException();
+            var existing = await _context.Tasks.FindAsync(project.Id);
+            if (existing is null)
+                throw new KeyNotFoundException($"Project with ID {project.Id} not found.");
+
+            _context.Entry(existing).CurrentValues.SetValues(project);
+            await _context.SaveChangesAsync();
         }
     }
 }

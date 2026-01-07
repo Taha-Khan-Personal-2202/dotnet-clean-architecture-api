@@ -1,20 +1,14 @@
 ﻿using Application.DTOs.Projects;
-using Application.UseCases.Projects;
 using Domain.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/task")]
 [ApiController]
-public class ProjectController : ControllerBase
+public class ProjectController(IProjectService service) : ControllerBase
 {
-    private readonly IProjectService _service;
-
-    public ProjectController(IProjectService service)
-    {
-        _service = service;
-    }
+    private readonly IProjectService _service = service;
 
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -28,7 +22,7 @@ public class ProjectController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet("GetById/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id)
@@ -49,7 +43,7 @@ public class ProjectController : ControllerBase
         return Ok(projects);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut("update/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -65,7 +59,7 @@ public class ProjectController : ControllerBase
         return NoContent();
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete("delete/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id)
