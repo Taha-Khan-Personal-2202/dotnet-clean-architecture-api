@@ -1,3 +1,4 @@
+using API.Middlewares;
 using Application;
 using Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -22,10 +23,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseMiddleware<ExceptionMiddleware>();
+
 // Configure the HTTP request pipeline.
-
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();

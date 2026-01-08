@@ -7,7 +7,7 @@ public interface IProjectService
 {
     Task<bool> ExistsByNameAsync(string name);
     Task<ProjectResponseDTO> AddAsync(ProjectRequestDTO project);
-    Task UpdateAsync(ProjectUpdateDTO request);
+    Task UpdateAsync(ProjectRequestUpdateDTO request);
     Task<List<ProjectResponseDTO>> GetAllAsync();
     Task<ProjectResponseDTO?> GetByIdAsync(Guid id);
     Task DeleteAsync(Guid id);

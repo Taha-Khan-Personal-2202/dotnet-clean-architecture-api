@@ -1,23 +1,27 @@
 ﻿using Application.DTOs.Projects;
+using Application.Validators.Projects;
 using Domain.Entities;
 using Domain.Interfaces;
-
+using System.ComponentModel.DataAnnotations;
+using FluentValidation;
 namespace Application.UseCases.Projects;
 
-public class ProjectUseCase : IProjectService
+public class ProjectUseCase(IProjectRepository repository,
+        ProjectValidator createValidations,
+        UpdateProjectValidator updataValidations) : IProjectService
 {
-    private readonly IProjectRepository _repository;
-
-    public ProjectUseCase(IProjectRepository repository)
-    {
-        _repository = repository;
-    }
+    private readonly IProjectRepository _repository = repository;
+    private readonly ProjectValidator _createValidations = createValidations;
+    private readonly UpdateProjectValidator _updataValidations = updataValidations;
 
     public async Task<ProjectResponseDTO> AddAsync(ProjectRequestDTO request)
     {
-        if (await _repository.ExistsByNameAsync(request.Name))
+        await _createValidations.ValidateAndThrowAsync(request);
+
+        if (await _repository.ExistsByNameAsync(request.Name.Trim()))
         {
-            throw new InvalidOperationException($"Project with name '{request.Name}' already exists.");
+            throw new InvalidOperationException(
+                $"Project with name '{request.Name}' already exists.");
         }
 
         var project = new Project(
@@ -80,7 +84,7 @@ public class ProjectUseCase : IProjectService
         };
     }
 
-    public async Task UpdateAsync(ProjectUpdateDTO request)
+    public async Task UpdateAsync(ProjectRequestUpdateDTO request)
     {
         var project = await _repository.GetByIdAsync(request.Id)
             ?? throw new KeyNotFoundException($"Project with ID {request.Id} not found.");

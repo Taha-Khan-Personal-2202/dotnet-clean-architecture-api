@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[Route("api/task")]
+[Route("api/project")]
 [ApiController]
 public class ProjectController(IProjectService service) : ControllerBase
 {
@@ -47,7 +47,7 @@ public class ProjectController(IProjectService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] ProjectUpdateDTO request)
+    public async Task<IActionResult> Update(Guid id, [FromBody] ProjectRequestUpdateDTO request)
     {
         if (id != request.Id)
             return BadRequest("ID in URL must match ID in body");
