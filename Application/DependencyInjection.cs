@@ -1,7 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.UseCases.Projects;
 using Application.UseCases.Tasks;
-using Domain.Interfaces;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 

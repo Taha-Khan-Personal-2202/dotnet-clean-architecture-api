@@ -1,9 +1,8 @@
-﻿using Domain.Entities;
-using Domain.Enums;
+﻿using Domain.Enums;
 
-namespace Application.DTOs.Tasks;
+namespace Application.DTOs.Task;
 
-public class TaskResponseDTO : BaseEntity
+public class TaskRequestDTO
 {
     public string Title { get; set; } = null!;
     public string? Description { get; set; } = string.Empty;
@@ -12,3 +11,4 @@ public class TaskResponseDTO : BaseEntity
     public DateTime? DueDate { get; set; }
     public Guid? AssignedUserId { get; set; }
 }
+

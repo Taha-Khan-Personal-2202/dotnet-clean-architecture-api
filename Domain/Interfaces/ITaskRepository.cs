@@ -1,6 +1,4 @@
-﻿using Domain.Entities;
-
-namespace Domain.Interfaces;
+﻿namespace Domain.Interfaces;
 
 public interface ITaskRepository
 {
@@ -9,4 +7,5 @@ public interface ITaskRepository
     Task<List<ProjectTask>> GetAllAsync();
     Task<ProjectTask?> GetByIdAsync(Guid id);
     Task DeleteAsync(ProjectTask ProjectTask);
+    Task<bool> FindCompletedTasksAsync();
 }

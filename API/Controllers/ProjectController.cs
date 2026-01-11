@@ -1,10 +1,10 @@
-﻿using Application.DTOs.Projects;
-using Domain.Interfaces;
+﻿using Application.DTOs.Project;
+using Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[Route("api/project")]
+[Route("api/[controller]")]
 [ApiController]
 public class ProjectController(IProjectService service) : ControllerBase
 {
@@ -28,19 +28,14 @@ public class ProjectController(IProjectService service) : ControllerBase
     public async Task<IActionResult> GetById(Guid id)
     {
         var project = await _service.GetByIdAsync(id);
-
-        if (project is null)
-            return NotFound();
-
-        return Ok(project);
+        return project is null ? NotFound() : Ok(project);
     }
 
     [HttpGet("all")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll() 
     {
-        var projects = await _service.GetAllAsync();
-        return Ok(projects);
+        return Ok(await _service.GetAllAsync());
     }
 
     [HttpPut("update/{id:guid}")]
@@ -55,8 +50,7 @@ public class ProjectController(IProjectService service) : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        await _service.UpdateAsync(request);
-        return NoContent();
+        return Ok(await _service.UpdateAsync(request));
     }
 
     [HttpDelete("delete/{id:guid}")]

@@ -1,4 +1,5 @@
-﻿using Domain.Interfaces;
+﻿using Domain.Enums;
+using Domain.Interfaces;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,6 +19,11 @@ namespace Infrastructure.Repositories
         {
             _context.Tasks.Remove(project);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<bool> FindCompletedTasksAsync()
+        {
+            return await _context.Tasks.AnyAsync(a => a.Status == Status.Pending || a.Status == Status.InProgress);
         }
 
         public async Task<List<ProjectTask>> GetAllAsync()

@@ -1,15 +1,20 @@
-﻿using Application.DTOs.Tasks;
+﻿using Application.DTOs.Task;
 using Application.Interfaces;
 using Domain.Interfaces;
 
 namespace Application.UseCases.Tasks;
 
-public class TaskUseCase(ITaskRepository repository) : ITaskService
+public class TaskUseCase(ITaskRepository repository,
+    IProjectRepository projectRepository) : ITaskService
 {
     public ITaskRepository _repository { get; set; } = repository;
+    public IProjectRepository _projectRepository { get; set; } = projectRepository;
 
     public async Task<TaskResponseDTO> AddAsync(TaskRequestDTO request)
     {
+        if (await _projectRepository.GetByIdAsync(request.ProjectId) == null)
+            throw new KeyNotFoundException($"Project with ID {request.ProjectId} not found."); ;
+
         var task = new ProjectTask(
                     request.Title,
                     request.Description,
@@ -27,6 +32,11 @@ public class TaskUseCase(ITaskRepository repository) : ITaskService
             ?? throw new KeyNotFoundException($"Task with ID {id} not found.");
 
         await _repository.DeleteAsync(task);
+    }
+
+    public async Task<bool> FindCompletedTasksAsync()
+    {
+        return await _repository.FindCompletedTasksAsync();
     }
 
     public async Task<List<TaskResponseDTO>> GetAllAsync()
@@ -56,6 +66,9 @@ public class TaskUseCase(ITaskRepository repository) : ITaskService
         task.Status = request.Status;
         task.AssignedUserId = request.AssignedUserId;
         task.DueDate = request.DueDate;
+        task.IsActive = request.IsActive;
+        task.IsDeleted = request.IsDeleted;
+        task.UpdatedAt = request.UpdatedAt;
         await _repository.UpdateAsync(task);
     }
 
@@ -71,6 +84,9 @@ public class TaskUseCase(ITaskRepository repository) : ITaskService
             ProjectId = task.ProjectId,
             Status = task.Status,
             Title = task.Title,
+            UpdatedAt = task.UpdatedAt,
+            IsDeleted = task.IsDeleted,
+            IsActive = task.IsActive,
         };
     }
 }

@@ -1,16 +1,19 @@
-﻿using Application.DTOs.Projects;
+﻿using Application.DTOs.Project;
+using Application.Interfaces;
 using Application.Validators.Projects;
 using Domain.Entities;
 using Domain.Interfaces;
-using System.ComponentModel.DataAnnotations;
 using FluentValidation;
+
 namespace Application.UseCases.Projects;
 
 public class ProjectUseCase(IProjectRepository repository,
         ProjectValidator createValidations,
-        UpdateProjectValidator updataValidations) : IProjectService
+        UpdateProjectValidator updataValidations,
+        ITaskService taskService) : IProjectService
 {
     private readonly IProjectRepository _repository = repository;
+    private readonly ITaskService _taskService = taskService;
     private readonly ProjectValidator _createValidations = createValidations;
     private readonly UpdateProjectValidator _updataValidations = updataValidations;
 
@@ -19,10 +22,7 @@ public class ProjectUseCase(IProjectRepository repository,
         await _createValidations.ValidateAndThrowAsync(request);
 
         if (await _repository.ExistsByNameAsync(request.Name.Trim()))
-        {
-            throw new InvalidOperationException(
-                $"Project with name '{request.Name}' already exists.");
-        }
+            throw new InvalidOperationException($"Project with name '{request.Name}' already exists.");
 
         var project = new Project(
             request.Name.Trim(),
@@ -30,14 +30,7 @@ public class ProjectUseCase(IProjectRepository repository,
 
         await _repository.AddAsync(project);
 
-        return new ProjectResponseDTO
-        {
-            Id = project.Id,
-            Name = project.Name,
-            Description = project.Description,
-            IsArchived = project.IsArchived,
-            CreatedAt = project.CreatedAt
-        };
+        return MapEntityToDTO(project);
     }
 
     public async Task DeleteAsync(Guid id)
@@ -57,39 +50,24 @@ public class ProjectUseCase(IProjectRepository repository,
     {
         var projects = await _repository.GetAllAsync();
 
-        return projects.Select(p => new ProjectResponseDTO
-        {
-            Id = p.Id,
-            Name = p.Name,
-            Description = p.Description,
-            IsArchived = p.IsArchived,
-            CreatedAt = p.CreatedAt
-        }).ToList();
+        List<ProjectResponseDTO> responseDTOs = new List<ProjectResponseDTO>();
+        projects.ForEach(f => { responseDTOs.Add(MapEntityToDTO(f)); });
+        return responseDTOs;
     }
 
     public async Task<ProjectResponseDTO?> GetByIdAsync(Guid id)
     {
         var project = await _repository.GetByIdAsync(id);
+        if (project is null) return null;
 
-        if (project is null)
-            return null;
-
-        return new ProjectResponseDTO
-        {
-            Id = project.Id,
-            Name = project.Name,
-            Description = project.Description,
-            IsArchived = project.IsArchived,
-            CreatedAt = project.CreatedAt
-        };
+        return MapEntityToDTO(project);
     }
 
-    public async Task UpdateAsync(ProjectRequestUpdateDTO request)
+    public async Task<ProjectResponseDTO> UpdateAsync(ProjectRequestUpdateDTO request)
     {
         var project = await _repository.GetByIdAsync(request.Id)
             ?? throw new KeyNotFoundException($"Project with ID {request.Id} not found.");
 
-        // Check name uniqueness only when name is actually changing
         if (!string.Equals(project.Name, request.Name, StringComparison.OrdinalIgnoreCase))
         {
             if (await _repository.ExistsByNameAsync(request.Name))
@@ -98,10 +76,36 @@ public class ProjectUseCase(IProjectRepository repository,
             }
         }
 
+        if (request.IsArchived && await taskService.FindCompletedTasksAsync())
+            throw new InvalidOperationException($"Project already have in progress task");
+
         project.Name = request.Name.Trim();
         project.Description = request.Description?.Trim();
         project.IsArchived = request.IsArchived;
-
+        project.UpdatedAt = DateTime.UtcNow;
+        project.IsDeleted = request.IsDeleted;
+        project.IsActive = request.IsActive;
         await _repository.UpdateAsync(project);
+
+        return MapEntityToDTO(project);
     }
+
+
+    ProjectResponseDTO MapEntityToDTO(Project project)
+    {
+        return new ProjectResponseDTO
+        {
+            Id = project.Id,
+            Name = project.Name,
+            Description = project.Description,
+            IsArchived = project.IsArchived,
+            CreatedAt = project.CreatedAt,
+            IsActive = project.IsActive,
+            IsDeleted = project.IsDeleted,
+            UpdatedAt = project.UpdatedAt,
+        };
+    }
+
+
+
 }

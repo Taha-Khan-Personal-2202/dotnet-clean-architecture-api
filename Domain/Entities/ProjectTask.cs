@@ -24,6 +24,9 @@ public class ProjectTask : BaseEntity
         ProjectId = projectId;
         DueDate = dueDate;
         Status = Status.Pending;
+        CreatedAt = DateTime.UtcNow;
+        IsActive = true;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     public void AssignTo(Guid userId)

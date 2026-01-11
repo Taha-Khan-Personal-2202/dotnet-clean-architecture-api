@@ -5,7 +5,7 @@ public class Project : BaseEntity
     public string Name { get; set; } = null!;
     public string? Description { get; set; }
     public bool IsArchived { get; set; } = false;
-    
+
     private Project() { }
 
     public Project(string name, string? description)
@@ -17,6 +17,8 @@ public class Project : BaseEntity
         Description = description;
         IsArchived = false;
         CreatedAt = DateTime.UtcNow;
+        IsActive = true;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Archive()

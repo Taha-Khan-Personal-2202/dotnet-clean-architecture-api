@@ -1,9 +1,9 @@
-﻿namespace Application.DTOs.Projects;
+﻿namespace Application.DTOs.Project;
 
 public class ProjectRequestDTO
 {
     public string Name { get; set; } = null!;
     public string? Description { get; set; }
-    public bool IsArchived { get; set; }
+    public bool IsArchived { get; set; } = false;
 }
 

@@ -1,4 +1,4 @@
-﻿using Application.DTOs.Projects;
+﻿using Application.DTOs.Project;
 using FluentValidation;
 
 namespace Application.Validators.Projects;
@@ -9,7 +9,7 @@ public class ProjectValidator : AbstractValidator<ProjectRequestDTO>
     {
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("Project name is required.")
-            .MinimumLength(2).WithMessage("Project name must be at least 2 characters long.");
+            .MaximumLength(50).WithMessage("Length cannot exceed 50 charcters.");
 
         RuleFor(x => x.Description)
             .MaximumLength(300).WithMessage("Description cannot exceed 300 characters.");

@@ -1,4 +1,4 @@
-﻿using Application.DTOs.Tasks;
+﻿using Application.DTOs.Task;
 
 namespace Application.Interfaces;
 
@@ -9,4 +9,5 @@ public interface ITaskService
     Task<List<TaskResponseDTO>> GetAllAsync();
     Task<TaskResponseDTO?> GetByIdAsync(Guid id);
     Task DeleteAsync(Guid id);
+    Task<bool> FindCompletedTasksAsync();
 }

@@ -1,4 +1,4 @@
-﻿using Application.DTOs.Tasks;
+﻿using Application.DTOs.Task;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Server.HttpSys;
