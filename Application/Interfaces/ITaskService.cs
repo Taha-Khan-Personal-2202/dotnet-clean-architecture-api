@@ -9,5 +9,5 @@ public interface ITaskService
     Task<List<TaskResponseDTO>> GetAllAsync();
     Task<TaskResponseDTO?> GetByIdAsync(Guid id);
     Task DeleteAsync(Guid id);
-    Task<bool> FindCompletedTasksAsync();
+    Task<bool> FindInProgressTasksAsync();
 }

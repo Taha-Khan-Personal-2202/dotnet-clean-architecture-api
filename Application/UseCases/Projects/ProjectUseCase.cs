@@ -38,6 +38,9 @@ public class ProjectUseCase(IProjectRepository repository,
         var project = await _repository.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Project with ID {id} not found.");
 
+        if (await taskService.FindInProgressTasksAsync())
+            throw new InvalidOperationException("The project cannot be archived because it has tasks in progress.");
+
         await _repository.DeleteAsync(project);
     }
 
@@ -76,8 +79,8 @@ public class ProjectUseCase(IProjectRepository repository,
             }
         }
 
-        if (request.IsArchived && await taskService.FindCompletedTasksAsync())
-            throw new InvalidOperationException($"Project already have in progress task");
+        if (request.IsArchived && await taskService.FindInProgressTasksAsync())
+            throw new InvalidOperationException("The project cannot be archived because it has tasks in progress.");
 
         project.Name = request.Name.Trim();
         project.Description = request.Description?.Trim();

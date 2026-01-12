@@ -12,8 +12,12 @@ public class TaskUseCase(ITaskRepository repository,
 
     public async Task<TaskResponseDTO> AddAsync(TaskRequestDTO request)
     {
-        if (await _projectRepository.GetByIdAsync(request.ProjectId) == null)
+        var project = await _projectRepository.GetByIdAsync(request.ProjectId);
+        if (project == null)
             throw new KeyNotFoundException($"Project with ID {request.ProjectId} not found."); ;
+
+        if (project.IsArchived)
+            throw new Exception("Can not assing a task to archived project.");
 
         var task = new ProjectTask(
                     request.Title,
@@ -34,7 +38,7 @@ public class TaskUseCase(ITaskRepository repository,
         await _repository.DeleteAsync(task);
     }
 
-    public async Task<bool> FindCompletedTasksAsync()
+    public async Task<bool> FindInProgressTasksAsync()
     {
         return await _repository.FindCompletedTasksAsync();
     }
@@ -61,6 +65,8 @@ public class TaskUseCase(ITaskRepository repository,
     public async Task UpdateAsync(TaskRequestUpdateDTO request)
     {
         var task = await _repository.GetByIdAsync(request.Id) ?? throw new KeyNotFoundException($"Task with ID {request.Id} not found.");
+        if (task.Status < request.Status) throw new Exception("Task status can not go backword.");
+        
         task.Title = request.Title;
         task.Description = request.Description;
         task.Status = request.Status;
