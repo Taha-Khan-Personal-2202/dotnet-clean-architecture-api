@@ -60,4 +60,14 @@ public class ProjectTaskController(ITaskService service) : ControllerBase
         await _taskService.DeleteAsync(id);
         return NoContent();
     }
+
+    [HttpGet("GetByProjectId/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetByProjectIdAsync(Guid id)
+    {
+        var tasks = await _taskService.GetByProjectIdAsync(id);
+        return tasks != null && tasks.Count != 0 ? Ok(tasks) : NotFound();
+    }
+
 }

@@ -39,6 +39,13 @@ namespace Infrastructure.Repositories
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
 
+        public async Task<List<ProjectTask>> GetByProjectIdAsync(Guid id)
+        {
+            return await _context.Tasks
+                .Where(w => w.ProjectId == id)
+                .ToListAsync();
+        }
+
         public async Task UpdateAsync(ProjectTask project)
         {
             var existing = await _context.Tasks.FindAsync(project.Id);

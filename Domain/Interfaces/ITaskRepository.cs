@@ -8,4 +8,5 @@ public interface ITaskRepository
     Task<ProjectTask?> GetByIdAsync(Guid id);
     Task DeleteAsync(ProjectTask ProjectTask);
     Task<bool> FindCompletedTasksAsync();
+    Task<List<ProjectTask>> GetByProjectIdAsync(Guid id);
 }
