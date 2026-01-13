@@ -98,38 +98,24 @@ Update the connection string in `appsettings.json` (or `appsettings.Development.
 ```
 
 Note: actual port may be different - check the console output after dotnet run
-
 Important: Replace 'yourpassword' with your actual PostgreSQL password
 
 ### 3. Apply database migrations
+Open Package Manager Console in Visual Studio and run these commands one by one:
 
-Using .NET CLI (recommended):
-
-# Create the initial migration
-dotnet ef migrations add InitialCreate \
-  --project src/Infrastructure \
-  --startup-project src/API
-
-# Apply the migration to the database
-dotnet ef database update \
-  --project src/Infrastructure \
-  --startup-project src/API
-
-Alternative - Package Manager Console (Visual Studio):
-
+```PowerShell
 Add-Migration InitialCreate -Project src/Infrastructure -StartupProject src/API
+```
+
+```PowerShell
 Update-Database -Project src/Infrastructure -StartupProject src/API
+```
 
-4. Run the application
+### 4. Apply database migrations
+```Text
+https://localhost:{port}/swagger
+```
 
-dotnet run --project src/API
 
-5. Open Swagger UI
-
-After application starts, open in browser:
-
-https://localhost:5001/swagger
-or
-https://localhost:7150/swagger
 
 
