@@ -7,7 +7,7 @@ Inspired by real internal tools like **Jira / Taiga / Trello (backend side only)
 
 ---
 
-## 🎯 Purpose of This Project
+## Purpose of This Project
 
 This repository exists to demonstrate:
 
@@ -24,7 +24,7 @@ This repository exists to demonstrate:
 
 ---
 
-## 🧱 Architecture Overview
+## Architecture Overview
 The solution strictly follows **Clean Architecture**:
 
 
@@ -37,13 +37,13 @@ The solution strictly follows **Clean Architecture**:
 | **Infrastructure** | EF Core, PostgreSQL, repositories |
 | **API** | Controllers, middleware, HTTP & request pipeline |
 
-📌 **Business rules live in the Application layer**, not in controllers or database.
+**Business rules live in the Application layer**, not in controllers or database.
 
 ---
 
-## 🧩 Core Features
+## Core Features
 
-### ✅ Project Management
+### Project Management
 - Create project
 - Update project
 - Archive project
@@ -51,20 +51,20 @@ The solution strictly follows **Clean Architecture**:
 - Enforce unique project name
 - Prevent updates to archived projects
 
-### ✅ Task Management
+### Task Management
 - Create task under a project
 - Update task details
 - Assign task to developer
 - Update task status
 - Fetch tasks by project
 
-### ✅ Business Rules (Application Layer)
+### Business Rules (Application Layer)
 - Tasks cannot be created under archived projects
 - Task status transitions are validated
 - Completed tasks cannot be modified
 - Project cannot be deleted if active tasks exist
 
-### ✅ API Quality
+### API Quality
 - DTO-based API responses (no entity exposure)
 - Proper HTTP status codes
 - Centralized exception handling
@@ -72,7 +72,7 @@ The solution strictly follows **Clean Architecture**:
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **ASP.NET Core Web API (.NET 10)**
 - **Clean Architecture**
@@ -85,7 +85,7 @@ No unnecessary libraries are used.
 
 ---
 
-## 🧪 Error Handling & Logging
+## Error Handling & Logging
 
 - Global `ExceptionMiddleware`
 - Handles **all exception types**
@@ -102,30 +102,25 @@ This allows building an **admin UI for error monitoring** later.
 
 ---
 
-## 🚀 How to Run Locally
+## How to Run Locally
 
-### 1️⃣ Clone the repository
+### Clone the repository
 ```bash
   git clone https://github.com/Taha-Khan-Personal-2202/dotnet-clean-architecture-api.git
 
-2️⃣ Configure database
+Configure database
 Update appsettings.json:
   "ConnectionStrings": {
     "DefaultConnection": "Host=localhost;Database=TaskDb;Username=postgres;Password=yourpassword"
   }
 
-3️⃣ Run migrations
+Run migrations
 Using Package Manager Console:
   Add-Migration InitialCreate
   Update-Database
 
-4️⃣ Run the API
+Run the API
   dotnet run
 
-5️⃣ Open Swagger UI
+Open Swagger UI
   https://localhost:{port}/swagger
-
-
-
-
-
