@@ -1,126 +1,135 @@
-# dotnet-clean-architecture-api
+# Clean Architecture Task & Project Management REST API
 
-A **Clean Architecture–based Task & Project Management REST API** built with **ASP.NET Core (.NET 10)**.  
-This project is **backend-only** and focuses on **architecture, business logic, and production-ready API design**.
+A **production-ready** backend REST API for task & project management built with **ASP.NET Core 10** following **Clean Architecture** principles.
 
-Inspired by real internal tools like **Jira / Taiga / Trello (backend side only)**.
+Inspired by tools like **Taiga / Trello** (backend side only).
+
+[![.NET](https://img.shields.io/badge/.NET-10-blueviolet.svg)](https://dotnet.microsoft.com)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
 ## Purpose of This Project
 
-This repository exists to demonstrate:
+This repository demonstrates how to build a **clean, scalable, and maintainable** backend system that answers one important question for recruiters and teams:
 
-- Clean Architecture principles
-- Proper separation of concerns
-- Real-world business logic (not just CRUD)
-- Centralized exception handling
-- Validation using FluentValidation
-- Database-backed error logging
-- Scalable and maintainable API design
+> **“Is this developer ready to build production-grade backend systems?”**
 
-> This project answers a single question for recruiters:  
-> **“Is this developer production-ready for backend systems?”**
+Focus: **Clean Architecture**, proper layering, real business rules, robust error handling, and production-ready API design.
 
 ---
 
 ## Architecture Overview
-The solution strictly follows **Clean Architecture**:
 
+Strict **Clean Architecture** implementation with clear separation of concerns:
 
-### Layer Responsibilities
+| Layer           | Responsibility                                                                 | Dependencies      |
+|-----------------|--------------------------------------------------------------------------------|-------------------|
+| **Domain**      | Entities, enums, domain interfaces, business rules             | **None**          |
+| **Application** | Use cases, DTOs, commands/queries, FluentValidation     | Domain              |
+| **Infrastructure** | EF Core, PostgreSQL, repositories, | Application + Domain |
+| **API**         | Controllers, middleware, exception handling, Swagger             | Application       |
 
-| Layer | Responsibility |
-|------|---------------|
-| **Domain** | Entities, enums, interfaces (no external dependencies) |
-| **Application** | Business logic, use cases, DTOs, validations |
-| **Infrastructure** | EF Core, PostgreSQL, repositories |
-| **API** | Controllers, middleware, HTTP & request pipeline |
-
-**Business rules live in the Application layer**, not in controllers or database.
+**Important:** All meaningful **business logic** lives in the **Application** layer — **never** in controllers or infrastructure.
 
 ---
 
 ## Core Features
 
 ### Project Management
-- Create project
-- Update project
+- Create new project
+- Update project details
 - Archive project
-- Get all projects
-- Enforce unique project name
-- Prevent updates to archived projects
+- List all projects (active + archived)
+- Enforce **unique project name**
+- Prevent modification of archived projects
 
 ### Task Management
-- Create task under a project
-- Update task details
-- Assign task to developer
-- Update task status
-- Fetch tasks by project
+- Create task in a project
+- Update task title, description, priority, due date
+- Assign task to a developer
+- Change task status
+- Get tasks filtered by project
 
-### Business Rules (Application Layer)
-- Tasks cannot be created under archived projects
-- Task status transitions are validated
-- Completed tasks cannot be modified
-- Project cannot be deleted if active tasks exist
-
-### API Quality
-- DTO-based API responses (no entity exposure)
-- Proper HTTP status codes
-- Centralized exception handling
-- Clean validation error responses
+### Important Business Rules (enforced in Application layer)
+- Cannot create tasks in **archived** projects
+- Strict **status transition** validation
+- **Completed** tasks are immutable (cannot be modified)
+- Project cannot be **deleted** if it contains active/open tasks
 
 ---
 
-## Tech Stack
+## Technical Stack
 
-- **ASP.NET Core Web API (.NET 10)**
+- **ASP.NET Core Web API** (.NET 10)
 - **Clean Architecture**
-- **Entity Framework Core**
+- **Entity Framework Core** (Code-First)
 - **PostgreSQL**
 - **FluentValidation**
-- **Swagger / OpenAPI**
-
-No unnecessary libraries are used.
+- **Swagger**
+- Minimal external packages — only what's truly necessary
 
 ---
 
 ## Error Handling & Logging
 
-- Global `ExceptionMiddleware`
-- Handles **all exception types**
-- Logs errors directly into the database
-- Captures:
-  - Error message
-  - Exception type
-  - File name & line number
-  - Stack trace
-  - Request path & HTTP method
-  - Timestamp
-
-This allows building an **admin UI for error monitoring** later.
+- Global **ExceptionMiddleware**
+- Catches **all** exceptions (expected & unexpected)
 
 ---
+## Getting Started — Local Development
 
-## How to Run Locally
+### 1. Clone the repository
 
-### Clone the repository
 ```bash
-  git clone https://github.com/Taha-Khan-Personal-2202/dotnet-clean-architecture-api.git
+git clone https://github.com/Taha-Khan-Personal-2202/dotnet-clean-architecture-api.git
+```
 
-Configure database
-Update appsettings.json:
+### 2. Configure database connection
+
+Update the connection string in `appsettings.json` (or `appsettings.Development.json`):
+
+```json
+{
   "ConnectionStrings": {
     "DefaultConnection": "Host=localhost;Database=TaskDb;Username=postgres;Password=yourpassword"
   }
+}
+```
 
-Run migrations
-Using Package Manager Console:
-  Add-Migration InitialCreate
-  Update-Database
+Note: actual port may be different - check the console output after dotnet run
 
-Run the API
-  dotnet run
+Important: Replace 'yourpassword' with your actual PostgreSQL password
 
-Open Swagger UI
-  https://localhost:{port}/swagger
+### 3. Apply database migrations
+
+Using .NET CLI (recommended):
+
+# Create the initial migration
+dotnet ef migrations add InitialCreate \
+  --project src/Infrastructure \
+  --startup-project src/API
+
+# Apply the migration to the database
+dotnet ef database update \
+  --project src/Infrastructure \
+  --startup-project src/API
+
+Alternative - Package Manager Console (Visual Studio):
+
+Add-Migration InitialCreate -Project src/Infrastructure -StartupProject src/API
+Update-Database -Project src/Infrastructure -StartupProject src/API
+
+4. Run the application
+
+dotnet run --project src/API
+
+5. Open Swagger UI
+
+After application starts, open in browser:
+
+https://localhost:5001/swagger
+or
+https://localhost:7150/swagger
+
+
