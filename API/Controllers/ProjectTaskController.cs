@@ -1,7 +1,6 @@
 ﻿using Application.DTOs.Task;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Server.HttpSys;
 
 namespace API.Controllers;
 
@@ -41,15 +40,16 @@ public class ProjectTaskController(ITaskService service) : ControllerBase
         return task == null ? NotFound() : Ok(task);
     }
 
-    [HttpPut("update")]
+    [HttpPut("update/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateAsync([FromBody]TaskRequestUpdateDTO request)
+    public async Task<IActionResult> UpdateAsync(Guid id, [FromBody] TaskRequestUpdateDTO request)
     {
+        if (id != request.Id) throw new InvalidOperationException("ID in URL must match ID in body");
         ArgumentNullException.ThrowIfNull(request);
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        await _taskService.UpdateAsync(request);
-        return Ok();
+        var task = await _taskService.UpdateAsync(request);
+        return Ok(task);
     }
 
     [HttpDelete("delete/{id:guid}")]

@@ -1,7 +1,5 @@
-﻿using Application.DTOs.Project;
-using Application.DTOs.Task;
+﻿using Application.DTOs.Task;
 using Application.Interfaces;
-using Domain.Entities;
 using Domain.Interfaces;
 
 namespace Application.UseCases.Tasks;
@@ -79,20 +77,21 @@ public class TaskUseCase(ITaskRepository repository,
         return responseDTOs;
     }
 
-    public async Task UpdateAsync(TaskRequestUpdateDTO request)
+    public async Task<TaskResponseDTO> UpdateAsync(TaskRequestUpdateDTO request)
     {
         var task = await _repository.GetByIdAsync(request.Id) ?? throw new KeyNotFoundException($"Task with ID {request.Id} not found.");
-        if (task.Status < request.Status) throw new Exception("Task status can not go backword.");
+        if (task.Status > request.Status) throw new Exception("Task status can not go backword.");
 
         task.Title = request.Title;
         task.Description = request.Description;
         task.Status = request.Status;
-        task.AssignedUserId = request.AssignedUserId;
         task.DueDate = request.DueDate;
         task.IsActive = request.IsActive;
         task.IsDeleted = request.IsDeleted;
         task.UpdatedAt = request.UpdatedAt;
         await _repository.UpdateAsync(task);
+
+        return MapEntityToDTO(task);
     }
 
     TaskResponseDTO MapEntityToDTO(ProjectTask task)
@@ -101,7 +100,6 @@ public class TaskUseCase(ITaskRepository repository,
         {
             Id = task.Id,
             Description = task.Description,
-            AssignedUserId = task.AssignedUserId,
             CreatedAt = task.CreatedAt,
             DueDate = task.DueDate,
             ProjectId = task.ProjectId,

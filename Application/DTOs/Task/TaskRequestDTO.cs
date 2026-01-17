@@ -9,6 +9,5 @@ public class TaskRequestDTO
     public Status Status { get; set; } = Status.Pending;
     public Guid ProjectId { get; set; }
     public DateTime? DueDate { get; set; }
-    public Guid? AssignedUserId { get; set; }
 }
 
