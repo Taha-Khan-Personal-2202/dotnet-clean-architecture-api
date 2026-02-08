@@ -14,8 +14,11 @@ public class ProjectController(IProjectService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Create([FromBody] ProjectRequestDTO request)
+    public async Task<IActionResult> Create([FromBody] ProjectRequestDTO? request)
     {
+        if (request is null)
+            return BadRequest(new { message = "Request body is required." });
+
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
@@ -45,8 +48,11 @@ public class ProjectController(IProjectService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] ProjectRequestUpdateDTO request)
+    public async Task<IActionResult> Update(Guid id, [FromBody] ProjectRequestUpdateDTO? request)
     {
+        if (request is null)
+            return BadRequest(new { message = "Request body is required." });
+
         if (id != request.Id)
             return BadRequest(new { message = "ID in URL must match ID in body." });
 
@@ -72,6 +78,6 @@ public class ProjectController(IProjectService service) : ControllerBase
     public async Task<IActionResult> ExistsByName(string name)
     {
         var result = await _service.ExistsByNameAsync(name);
-        return result.IsSuccess ? Ok() : NotFound(new { result.Message });
+        return result.IsSuccess ? Ok() : NotFound(new { message = result.Message });
     }
 }

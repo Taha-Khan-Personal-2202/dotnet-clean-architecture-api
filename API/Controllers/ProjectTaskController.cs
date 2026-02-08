@@ -15,7 +15,7 @@ public class ProjectTaskController(ITaskService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> AddAsync([FromBody] TaskRequestDTO request)
+    public async Task<IActionResult> AddAsync([FromBody] TaskRequestDTO? request)
     {
         if (request is null)
             return BadRequest(new { message = "Request body is required." });
@@ -47,7 +47,7 @@ public class ProjectTaskController(ITaskService service) : ControllerBase
     [HttpPut("update/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateAsync(Guid id, [FromBody] TaskRequestUpdateDTO request)
+    public async Task<IActionResult> UpdateAsync(Guid id, [FromBody] TaskRequestUpdateDTO? request)
     {
         if (request is null)
             return BadRequest(new { message = "Request body is required." });

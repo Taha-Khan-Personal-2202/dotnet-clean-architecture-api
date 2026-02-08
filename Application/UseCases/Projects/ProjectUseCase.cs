@@ -46,7 +46,7 @@ public class ProjectUseCase(
         if (!hasInProgressTasks.IsSuccess)
             return OperationResult<bool>.Fail(hasInProgressTasks.Message, hasInProgressTasks.StatusCode);
 
-        if (hasInProgressTasks.Data)
+        if (hasInProgressTasks.Data == true)
             return OperationResult<bool>.Fail("The project cannot be archived because it has tasks in progress.", 409);
 
         await _repository.DeleteAsync(project);
@@ -100,7 +100,7 @@ public class ProjectUseCase(
         if (!hasInProgressTasks.IsSuccess)
             return OperationResult<ProjectResponseDTO>.Fail(hasInProgressTasks.Message, hasInProgressTasks.StatusCode);
 
-        if (request.IsArchived && hasInProgressTasks.Data)
+        if (request.IsArchived && hasInProgressTasks.Data == true)
             return OperationResult<ProjectResponseDTO>.Fail("The project cannot be archived because it has tasks in progress.", 409);
 
         project.Name = request.Name.Trim();
