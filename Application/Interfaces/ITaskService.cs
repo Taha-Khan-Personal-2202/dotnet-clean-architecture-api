@@ -1,14 +1,15 @@
-﻿using Application.DTOs.Task;
+using Application.Common.Responses;
+using Application.DTOs.Task;
 
 namespace Application.Interfaces;
 
 public interface ITaskService
 {
-    Task<TaskResponseDTO> AddAsync(TaskRequestDTO request);
-    Task<TaskResponseDTO> UpdateAsync(TaskRequestUpdateDTO request);
-    Task<List<TaskResponseDTO>> GetAllAsync();
-    Task<TaskResponseDTO?> GetByIdAsync(Guid id);
-    Task DeleteAsync(Guid id);
-    Task<bool> FindInProgressTasksAsync();
-    Task<List<TaskResponseDTO>> GetByProjectIdAsync(Guid id);
+    Task<OperationResult<TaskResponseDTO>> AddAsync(TaskRequestDTO request);
+    Task<OperationResult<TaskResponseDTO>> UpdateAsync(TaskRequestUpdateDTO request);
+    Task<OperationResult<List<TaskResponseDTO>>> GetAllAsync();
+    Task<OperationResult<TaskResponseDTO>> GetByIdAsync(Guid id);
+    Task<OperationResult<bool>> DeleteAsync(Guid id);
+    Task<OperationResult<bool>> FindInProgressTasksAsync();
+    Task<OperationResult<List<TaskResponseDTO>>> GetByProjectIdAsync(Guid id);
 }
