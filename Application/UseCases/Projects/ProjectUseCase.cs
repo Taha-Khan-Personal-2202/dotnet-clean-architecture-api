@@ -1,86 +1,107 @@
-﻿using Application.DTOs.Project;
+using Application.Common.Responses;
+using Application.DTOs.Project;
 using Application.Interfaces;
 using Application.Validators.Projects;
 using Domain.Entities;
 using Domain.Interfaces;
-using FluentValidation;
 
 namespace Application.UseCases.Projects;
 
-public class ProjectUseCase(IProjectRepository repository,
-        ProjectValidator createValidations,
-        UpdateProjectValidator updataValidations,
-        ITaskService taskService) : IProjectService
+public class ProjectUseCase(
+    IProjectRepository repository,
+    ProjectValidator createValidations,
+    UpdateProjectValidator updateValidations,
+    ITaskService taskService) : IProjectService
 {
     private readonly IProjectRepository _repository = repository;
     private readonly ITaskService _taskService = taskService;
     private readonly ProjectValidator _createValidations = createValidations;
-    private readonly UpdateProjectValidator _updataValidations = updataValidations;
+    private readonly UpdateProjectValidator _updateValidations = updateValidations;
 
-    public async Task<ProjectResponseDTO> AddAsync(ProjectRequestDTO request)
+    public async Task<OperationResult<ProjectResponseDTO>> AddAsync(ProjectRequestDTO request)
     {
-        await _createValidations.ValidateAndThrowAsync(request);
-
-        if (await _repository.ExistsByNameAsync(request.Name.Trim()))
-            throw new InvalidOperationException($"Project with name '{request.Name}' already exists.");
-
-        var project = new Project(
-            request.Name.Trim(),
-            request.Description?.Trim());
-
-        await _repository.AddAsync(project);
-
-        return MapEntityToDTO(project);
-    }
-
-    public async Task DeleteAsync(Guid id)
-    {
-        var project = await _repository.GetByIdAsync(id)
-            ?? throw new KeyNotFoundException($"Project with ID {id} not found.");
-
-        if (await taskService.FindInProgressTasksAsync())
-            throw new InvalidOperationException("The project cannot be archived because it has tasks in progress.");
-
-        await _repository.DeleteAsync(project);
-    }
-
-    public async Task<bool> ExistsByNameAsync(string name)
-    {
-        return await _repository.ExistsByNameAsync(name);
-    }
-
-    public async Task<List<ProjectResponseDTO>> GetAllAsync()
-    {
-        var projects = await _repository.GetAllAsync();
-
-        List<ProjectResponseDTO> responseDTOs = new List<ProjectResponseDTO>();
-        projects.ForEach(f => { responseDTOs.Add(MapEntityToDTO(f)); });
-        return responseDTOs;
-    }
-
-    public async Task<ProjectResponseDTO?> GetByIdAsync(Guid id)
-    {
-        var project = await _repository.GetByIdAsync(id);
-        if (project is null) return null;
-
-        return MapEntityToDTO(project);
-    }
-
-    public async Task<ProjectResponseDTO> UpdateAsync(ProjectRequestUpdateDTO request)
-    {
-        var project = await _repository.GetByIdAsync(request.Id)
-            ?? throw new KeyNotFoundException($"Project with ID {request.Id} not found.");
-
-        if (!string.Equals(project.Name, request.Name, StringComparison.OrdinalIgnoreCase))
+        var validationResult = await _createValidations.ValidateAsync(request);
+        if (!validationResult.IsValid)
         {
-            if (await _repository.ExistsByNameAsync(request.Name))
-            {
-                throw new InvalidOperationException($"Project name '{request.Name}' is already taken.");
-            }
+            var errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
+            return OperationResult<ProjectResponseDTO>.Fail($"Validation failed: {errors}", 400);
         }
 
-        if (request.IsArchived && await taskService.FindInProgressTasksAsync())
-            throw new InvalidOperationException("The project cannot be archived because it has tasks in progress.");
+        if (await _repository.ExistsByNameAsync(request.Name.Trim()))
+            return OperationResult<ProjectResponseDTO>.Fail($"Project with name '{request.Name}' already exists.", 409);
+
+        var project = new Project(request.Name.Trim(), request.Description?.Trim());
+        await _repository.AddAsync(project);
+
+        return OperationResult<ProjectResponseDTO>.Success(MapEntityToDTO(project), "Project created successfully.", 201);
+    }
+
+    public async Task<OperationResult<bool>> DeleteAsync(Guid id)
+    {
+        var project = await _repository.GetByIdAsync(id);
+        if (project is null)
+            return OperationResult<bool>.Fail($"Project with ID {id} not found.", 404);
+
+        var hasInProgressTasks = await _taskService.FindInProgressTasksAsync();
+        if (!hasInProgressTasks.IsSuccess)
+            return OperationResult<bool>.Fail(hasInProgressTasks.Message, hasInProgressTasks.StatusCode);
+
+        if (hasInProgressTasks.Data)
+            return OperationResult<bool>.Fail("The project cannot be archived because it has tasks in progress.", 409);
+
+        await _repository.DeleteAsync(project);
+        return OperationResult<bool>.Success(true, "Project deleted successfully.");
+    }
+
+    public async Task<OperationResult<bool>> ExistsByNameAsync(string name)
+    {
+        var exists = await _repository.ExistsByNameAsync(name);
+        return exists
+            ? OperationResult<bool>.Success(true, $"Project '{name}' exists.")
+            : OperationResult<bool>.Fail($"Project '{name}' was not found.", 404);
+    }
+
+    public async Task<OperationResult<List<ProjectResponseDTO>>> GetAllAsync()
+    {
+        var projects = await _repository.GetAllAsync();
+        var responseDTOs = projects.Select(MapEntityToDTO).ToList();
+        return OperationResult<List<ProjectResponseDTO>>.Success(responseDTOs, "Projects fetched successfully.");
+    }
+
+    public async Task<OperationResult<ProjectResponseDTO>> GetByIdAsync(Guid id)
+    {
+        var project = await _repository.GetByIdAsync(id);
+        if (project is null)
+            return OperationResult<ProjectResponseDTO>.Fail($"Project with ID {id} not found.", 404);
+
+        return OperationResult<ProjectResponseDTO>.Success(MapEntityToDTO(project), "Project fetched successfully.");
+    }
+
+    public async Task<OperationResult<ProjectResponseDTO>> UpdateAsync(ProjectRequestUpdateDTO request)
+    {
+        var validationResult = await _updateValidations.ValidateAsync(request);
+        if (!validationResult.IsValid)
+        {
+            var errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
+            return OperationResult<ProjectResponseDTO>.Fail($"Validation failed: {errors}", 400);
+        }
+
+        var project = await _repository.GetByIdAsync(request.Id);
+        if (project is null)
+            return OperationResult<ProjectResponseDTO>.Fail($"Project with ID {request.Id} not found.", 404);
+
+        if (!string.Equals(project.Name, request.Name, StringComparison.OrdinalIgnoreCase) &&
+            await _repository.ExistsByNameAsync(request.Name))
+        {
+            return OperationResult<ProjectResponseDTO>.Fail($"Project name '{request.Name}' is already taken.", 409);
+        }
+
+        var hasInProgressTasks = await _taskService.FindInProgressTasksAsync();
+        if (!hasInProgressTasks.IsSuccess)
+            return OperationResult<ProjectResponseDTO>.Fail(hasInProgressTasks.Message, hasInProgressTasks.StatusCode);
+
+        if (request.IsArchived && hasInProgressTasks.Data)
+            return OperationResult<ProjectResponseDTO>.Fail("The project cannot be archived because it has tasks in progress.", 409);
 
         project.Name = request.Name.Trim();
         project.Description = request.Description?.Trim();
@@ -88,13 +109,13 @@ public class ProjectUseCase(IProjectRepository repository,
         project.UpdatedAt = DateTime.UtcNow;
         project.IsDeleted = request.IsDeleted;
         project.IsActive = request.IsActive;
+
         await _repository.UpdateAsync(project);
 
-        return MapEntityToDTO(project);
+        return OperationResult<ProjectResponseDTO>.Success(MapEntityToDTO(project), "Project updated successfully.");
     }
 
-
-    ProjectResponseDTO MapEntityToDTO(Project project)
+    private static ProjectResponseDTO MapEntityToDTO(Project project)
     {
         return new ProjectResponseDTO
         {
@@ -108,7 +129,4 @@ public class ProjectUseCase(IProjectRepository repository,
             UpdatedAt = project.UpdatedAt,
         };
     }
-
-
-
 }

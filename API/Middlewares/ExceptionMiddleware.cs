@@ -1,13 +1,11 @@
-﻿using FluentValidation;
+using FluentValidation;
 using System.Diagnostics;
 using System.Net;
 using System.Text.Json;
 
 namespace API.Middlewares;
 
-public class ExceptionMiddleware(
-        RequestDelegate next,
-        ILogger<ExceptionMiddleware> logger)
+public class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
 {
     private readonly RequestDelegate _next = next;
     private readonly ILogger<ExceptionMiddleware> _logger = logger;
@@ -42,43 +40,27 @@ public class ExceptionMiddleware(
         var trace = new StackTrace(exception, true);
         var frame = trace.GetFrames()?.FirstOrDefault(f => f.GetFileLineNumber() != 0);
 
-        var fileName = frame?.GetFileName();
-        var lineNumber = frame?.GetFileLineNumber();
-
         _logger.LogError(exception,
-            """
-            Exception caught
-            Type: {ExceptionType}
-            Message: {Message}
-            File: {File}
-            Line: {Line}
-            Path: {Path}
-            Method: {Method}
-            """,
+            "Exception caught. Type: {ExceptionType} | Message: {Message} | File: {File} | Line: {Line} | Path: {Path} | Method: {Method}",
             exception.GetType().Name,
             exception.Message,
-            fileName,
-            lineNumber,
+            frame?.GetFileName(),
+            frame?.GetFileLineNumber(),
             context.Request.Path,
-            context.Request.Method
-        );
+            context.Request.Method);
 
         object response = exception switch
         {
             ValidationException ve => new
             {
-                message = "Validation failed",
+                message = "Validation failed.",
                 errors = ve.Errors
                     .GroupBy(e => e.PropertyName)
-                    .ToDictionary(
-                        g => g.Key,
-                        g => g.Select(e => e.ErrorMessage).ToArray())
+                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray())
             },
-
-            _ => new
-            {
-                message = "An unexpected error occurred. Please try again later."
-            }
+            InvalidOperationException => new { message = exception.Message },
+            KeyNotFoundException => new { message = exception.Message },
+            _ => new { message = "Something went wrong while processing your request. Please try again later." }
         };
 
         await context.Response.WriteAsync(JsonSerializer.Serialize(response));

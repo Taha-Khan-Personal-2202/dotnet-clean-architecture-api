@@ -1,14 +1,14 @@
-﻿using Application.DTOs.Project;
-using Domain.Entities;
+using Application.Common.Responses;
+using Application.DTOs.Project;
 
 namespace Application.Interfaces;
 
 public interface IProjectService
 {
-    Task<bool> ExistsByNameAsync(string name);
-    Task<ProjectResponseDTO> AddAsync(ProjectRequestDTO project);
-    Task<ProjectResponseDTO> UpdateAsync(ProjectRequestUpdateDTO request);
-    Task<List<ProjectResponseDTO>> GetAllAsync();
-    Task<ProjectResponseDTO?> GetByIdAsync(Guid id);
-    Task DeleteAsync(Guid id);
+    Task<OperationResult<bool>> ExistsByNameAsync(string name);
+    Task<OperationResult<ProjectResponseDTO>> AddAsync(ProjectRequestDTO project);
+    Task<OperationResult<ProjectResponseDTO>> UpdateAsync(ProjectRequestUpdateDTO request);
+    Task<OperationResult<List<ProjectResponseDTO>>> GetAllAsync();
+    Task<OperationResult<ProjectResponseDTO>> GetByIdAsync(Guid id);
+    Task<OperationResult<bool>> DeleteAsync(Guid id);
 }
