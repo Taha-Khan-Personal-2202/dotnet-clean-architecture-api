@@ -1,113 +1,152 @@
 ﻿using Application.DTOs.Task;
 using Application.Interfaces;
+using Domain.Enums;
 using Domain.Interfaces;
+using FluentValidation;
 
 namespace Application.UseCases.Tasks;
 
-public class TaskUseCase(ITaskRepository repository,
-    IProjectRepository projectRepository) : ITaskService
+public sealed class TaskService : ITaskService
 {
-    public ITaskRepository _repository { get; set; } = repository;
-    public IProjectRepository _projectRepository { get; set; } = projectRepository;
+    private readonly ITaskRepository _repository;
+    private readonly IProjectRepository _projectRepository;
+    private readonly IValidator<TaskRequestDTO> _createValidator;
+    private readonly IValidator<TaskRequestUpdateDTO> _updateValidator;
 
-    public async Task<TaskResponseDTO> AddAsync(TaskRequestDTO request)
+    public TaskService(
+        ITaskRepository repository,
+        IProjectRepository projectRepository,
+        IValidator<TaskRequestDTO> createValidator,
+        IValidator<TaskRequestUpdateDTO> updateValidator)
     {
+        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        _projectRepository = projectRepository ?? throw new ArgumentNullException(nameof(projectRepository));
+        _createValidator = createValidator ?? throw new ArgumentNullException(nameof(createValidator));
+        _updateValidator = updateValidator ?? throw new ArgumentNullException(nameof(updateValidator));
+    }
+
+    public async Task<OperationResult<TaskResponseDTO>> AddAsync(TaskRequestDTO request)
+    {
+        var validation = await _createValidator.ValidateAsync(request);
+        if (!validation.IsValid)
+        {
+            var errors = string.Join("; ", validation.Errors.Select(e => e.ErrorMessage));
+            return OperationResult<TaskResponseDTO>.Error(errors, 400);
+        }
+
         var project = await _projectRepository.GetByIdAsync(request.ProjectId);
-        if (project == null)
-            throw new KeyNotFoundException($"Project with ID {request.ProjectId} not found."); ;
+        if (project is null)
+            return OperationResult<TaskResponseDTO>.Error("Project not found.", 404);
 
         if (project.IsArchived)
-            throw new Exception("Can not assing a task to archived project.");
+            return OperationResult<TaskResponseDTO>.Error("Cannot assign task to an archived project.", 400);
 
         var task = new ProjectTask(
-                    request.Title,
-                    request.Description,
-                    request.ProjectId,
-                    request.DueDate);
+            title: request.Title.Trim(),
+            description: request.Description?.Trim(),
+            projectId: request.ProjectId,
+            dueDate: request.DueDate);
 
         await _repository.AddAsync(task);
-
-        return MapEntityToDTO(task);
+        
+        return OperationResult<TaskResponseDTO>.Ok(
+            MapToDto(task),
+            "Task created successfully.",
+            201);
     }
 
-    public async Task DeleteAsync(Guid id)
+    public async Task<OperationResult<TaskResponseDTO>> GetByIdAsync(Guid id)
     {
-        var task = await _repository.GetByIdAsync(id)
-            ?? throw new KeyNotFoundException($"Task with ID {id} not found.");
+        var task = await _repository.GetByIdAsync(id);
+        if (task is null)
+            return OperationResult<TaskResponseDTO>.Error("Task not found.", 404);
 
-        await _repository.DeleteAsync(task);
+        return OperationResult<TaskResponseDTO>.Ok(MapToDto(task));
     }
 
-    public async Task<bool> FindInProgressTasksAsync()
-    {
-        return await _repository.FindCompletedTasksAsync();
-    }
-
-    public async Task<List<TaskResponseDTO>> GetAllAsync()
+    public async Task<OperationResult<IEnumerable<TaskResponseDTO>>> GetAllAsync()
     {
         var tasks = await _repository.GetAllAsync();
-        List<TaskResponseDTO> responseDTOs = new List<TaskResponseDTO>();
+        var dtos = tasks.Select(MapToDto).ToList();
 
-        tasks.ForEach(f =>
+        return OperationResult<IEnumerable<TaskResponseDTO>>.Ok(
+            dtos,
+            $"Retrieved {dtos.Count} tasks.");
+    }
+
+    public async Task<OperationResult<TaskResponseDTO>> UpdateAsync(TaskRequestUpdateDTO request)
+    {
+        var validation = await _updateValidator.ValidateAsync(request);
+        if (!validation.IsValid)
         {
-            responseDTOs.Add(MapEntityToDTO(f));
-        });
+            var errors = string.Join("; ", validation.Errors.Select(e => e.ErrorMessage));
+            return OperationResult<TaskResponseDTO>.Error(errors, 400);
+        }
 
-        return responseDTOs;
-    }
+        var task = await _repository.GetByIdAsync(request.Id);
+        if (task is null)
+            return OperationResult<TaskResponseDTO>.Error("Task not found.", 404);
 
-    public async Task<TaskResponseDTO?> GetByIdAsync(Guid id)
-    {
-        var task = await _repository.GetByIdAsync(id) ?? throw new KeyNotFoundException($"Task with ID {id} not found.");
-        return MapEntityToDTO(task);
-    }
+        if (request.Status < task.Status)
+            return OperationResult<TaskResponseDTO>.Error("Task status cannot be downgraded.", 400);
 
-    public async Task<List<TaskResponseDTO>> GetByProjectIdAsync(Guid id)
-    {
-        if (await _projectRepository.GetByIdAsync(id) == null)
-            throw new KeyNotFoundException($"Project with {id} not found.");
-
-        List<ProjectTask> tasks = await _repository.GetByProjectIdAsync(id);
-
-        List<TaskResponseDTO> responseDTOs = new();
-        tasks.ForEach(f =>
-        {
-            responseDTOs.Add(MapEntityToDTO(f));
-        });
-        return responseDTOs;
-    }
-
-    public async Task<TaskResponseDTO> UpdateAsync(TaskRequestUpdateDTO request)
-    {
-        var task = await _repository.GetByIdAsync(request.Id) ?? throw new KeyNotFoundException($"Task with ID {request.Id} not found.");
-        if (task.Status > request.Status) throw new Exception("Task status can not go backword.");
-
-        task.Title = request.Title;
-        task.Description = request.Description;
+        task.Title = request.Title.Trim();
+        task.Description = request.Description?.Trim();
         task.Status = request.Status;
         task.DueDate = request.DueDate;
         task.IsActive = request.IsActive;
         task.IsDeleted = request.IsDeleted;
-        task.UpdatedAt = request.UpdatedAt;
+        task.UpdatedAt = DateTime.UtcNow;
+
         await _repository.UpdateAsync(task);
-
-        return MapEntityToDTO(task);
+        
+        return OperationResult<TaskResponseDTO>.Ok(
+            MapToDto(task),
+            "Task updated successfully.");
     }
 
-    TaskResponseDTO MapEntityToDTO(ProjectTask task)
+    public async Task<OperationResult<bool>> DeleteAsync(Guid id)
     {
-        return new TaskResponseDTO()
-        {
-            Id = task.Id,
-            Description = task.Description,
-            CreatedAt = task.CreatedAt,
-            DueDate = task.DueDate,
-            ProjectId = task.ProjectId,
-            Status = task.Status,
-            Title = task.Title,
-            UpdatedAt = task.UpdatedAt,
-            IsDeleted = task.IsDeleted,
-            IsActive = task.IsActive,
-        };
+        var task = await _repository.GetByIdAsync(id);
+        if (task is null)
+            return OperationResult<bool>.Error("Task not found.", 404, false);
+
+        await _repository.DeleteAsync(task);
+        
+        return OperationResult<bool>.Ok(true, "Task deleted successfully.");
     }
+
+    public async Task<OperationResult<IEnumerable<TaskResponseDTO>>> GetByProjectIdAsync(Guid projectId)
+    {
+        var projectExists = await _projectRepository.GetByIdAsync(projectId);
+        if (projectExists == null)
+            return OperationResult<IEnumerable<TaskResponseDTO>>.Error("Project not found.", 404);
+
+        var tasks = await _repository.GetByProjectIdAsync(projectId);
+        var dtos = tasks.Select(MapToDto).ToList();
+
+        return OperationResult<IEnumerable<TaskResponseDTO>>.Ok(
+            dtos,
+            $"Retrieved {dtos.Count} tasks for project {projectId}.");
+    }
+
+    public async Task<bool> HasInProgressTasksForProjectAsync(Guid projectId)
+    {
+        var tasks = await _repository.GetByProjectIdAsync(projectId);
+        return tasks.Any(t => t.Status == Status.InProgress || t.Status == Status.Pending);
+    }
+
+    private static TaskResponseDTO MapToDto(ProjectTask task) => new()
+    {
+        Id = task.Id,
+        Title = task.Title,
+        Description = task.Description,
+        Status = task.Status,
+        ProjectId = task.ProjectId,
+        DueDate = task.DueDate,
+        CreatedAt = task.CreatedAt,
+        UpdatedAt = task.UpdatedAt,
+        IsActive = task.IsActive,
+        IsDeleted = task.IsDeleted
+    };
 }

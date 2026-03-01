@@ -4,70 +4,76 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/project-tasks")]
 [ApiController]
-public class ProjectTaskController(ITaskService service) : ControllerBase
+public class ProjectTasksController : ControllerBase
 {
-    private readonly ITaskService _taskService = service;
+    private readonly ITaskService _taskService;
+
+    public ProjectTasksController(ITaskService taskService)
+    {
+        _taskService = taskService ?? throw new ArgumentNullException(nameof(taskService));
+    }
 
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> AddAsync([FromBody] TaskRequestDTO request)
+    [ProducesResponseType(typeof(OperationResult<TaskResponseDTO>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(OperationResult<TaskResponseDTO>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(OperationResult<TaskResponseDTO>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Create([FromBody] TaskRequestDTO request)
     {
-        ArgumentNullException.ThrowIfNull(request);
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-
-        var response = await _taskService.AddAsync(request);
-        return Ok(response);
+        var result = await _taskService.AddAsync(request);
+        return StatusCode(result.StatusCode, result);
     }
 
-    [HttpGet("all")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetAllAsync()
+    [HttpGet]
+    [ProducesResponseType(typeof(OperationResult<IEnumerable<TaskResponseDTO>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAll()
     {
-        var tasks = await _taskService.GetAllAsync();
-        return tasks == null ? NotFound() : Ok(tasks);
+        var result = await _taskService.GetAllAsync();
+        return StatusCode(result.StatusCode, result);
     }
 
-    [HttpGet("GetById/{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetByIdAsync(Guid id)
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType(typeof(OperationResult<TaskResponseDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(OperationResult<TaskResponseDTO>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById(Guid id)
     {
-        var task = await _taskService.GetByIdAsync(id);
-        return task == null ? NotFound() : Ok(task);
+        var result = await _taskService.GetByIdAsync(id);
+        return StatusCode(result.StatusCode, result);
     }
 
-    [HttpPut("update/{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateAsync(Guid id, [FromBody] TaskRequestUpdateDTO request)
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(OperationResult<TaskResponseDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(OperationResult<TaskResponseDTO>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(OperationResult<TaskResponseDTO>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] TaskRequestUpdateDTO request)
     {
-        if (id != request.Id) throw new InvalidOperationException("ID in URL must match ID in body");
-        ArgumentNullException.ThrowIfNull(request);
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-        var task = await _taskService.UpdateAsync(request);
-        return Ok(task);
+        if (id != request.Id)
+            return BadRequest("ID in URL must match ID in body");
+
+        var result = await _taskService.UpdateAsync(request);
+        return StatusCode(result.StatusCode, result);
     }
 
-    [HttpDelete("delete/{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeleteAsync(Guid id)
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(OperationResult<bool>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(OperationResult<bool>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(Guid id)
     {
-        await _taskService.DeleteAsync(id);
+        var result = await _taskService.DeleteAsync(id);
+        if (!result.Success)
+            return StatusCode(result.StatusCode, result.Message);
+
         return NoContent();
     }
 
-    [HttpGet("GetByProjectId/{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetByProjectIdAsync(Guid id)
+    [HttpGet("project/{projectId:guid}")]
+    [ProducesResponseType(typeof(OperationResult<IEnumerable<TaskResponseDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(OperationResult<IEnumerable<TaskResponseDTO>>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetByProjectId(Guid projectId)
     {
-        var tasks = await _taskService.GetByProjectIdAsync(id);
-        return tasks != null && tasks.Count != 0 ? Ok(tasks) : NotFound();
+        var result = await _taskService.GetByProjectIdAsync(projectId);
+        return StatusCode(result.StatusCode, result);
     }
-
 }

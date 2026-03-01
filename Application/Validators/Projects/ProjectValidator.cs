@@ -3,31 +3,31 @@ using FluentValidation;
 
 namespace Application.Validators.Projects;
 
-public class ProjectValidator : AbstractValidator<ProjectRequestDTO>
+public sealed class ProjectRequestValidator : AbstractValidator<ProjectRequestDTO>
 {
-    public ProjectValidator()
+    public ProjectRequestValidator()
     {
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("Project name is required.")
-            .MaximumLength(50).WithMessage("Length cannot exceed 50 charcters.");
+            .MaximumLength(100).WithMessage("Name cannot exceed 100 characters.");
 
         RuleFor(x => x.Description)
-            .MaximumLength(300).WithMessage("Description cannot exceed 300 characters.");
+            .MaximumLength(500).WithMessage("Description cannot exceed 500 characters.");
     }
 }
 
-
-public class UpdateProjectValidator : AbstractValidator<ProjectRequestUpdateDTO>
+public sealed class ProjectRequestUpdateValidator : AbstractValidator<ProjectRequestUpdateDTO>
 {
-    public UpdateProjectValidator()
+    public ProjectRequestUpdateValidator()
     {
-        RuleFor(x => x.Id).NotNull();
+        RuleFor(x => x.Id)
+            .NotEmpty().WithMessage("Project ID is required.");
 
         RuleFor(x => x.Name)
-                .NotEmpty()
-                .MaximumLength(100);
+            .NotEmpty().WithMessage("Project name is required.")
+            .MaximumLength(100).WithMessage("Name cannot exceed 100 characters.");
 
-        RuleFor(x => x.Description).
-            MaximumLength(300);
+        RuleFor(x => x.Description)
+            .MaximumLength(500).WithMessage("Description cannot exceed 500 characters.");
     }
 }

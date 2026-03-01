@@ -4,11 +4,13 @@ namespace Application.Interfaces;
 
 public interface ITaskService
 {
-    Task<TaskResponseDTO> AddAsync(TaskRequestDTO request);
-    Task<TaskResponseDTO> UpdateAsync(TaskRequestUpdateDTO request);
-    Task<List<TaskResponseDTO>> GetAllAsync();
-    Task<TaskResponseDTO?> GetByIdAsync(Guid id);
-    Task DeleteAsync(Guid id);
-    Task<bool> FindInProgressTasksAsync();
-    Task<List<TaskResponseDTO>> GetByProjectIdAsync(Guid id);
+    Task<OperationResult<TaskResponseDTO>> AddAsync(TaskRequestDTO request);
+    Task<OperationResult<TaskResponseDTO>> UpdateAsync(TaskRequestUpdateDTO request);
+    Task<OperationResult<IEnumerable<TaskResponseDTO>>> GetAllAsync();
+    Task<OperationResult<TaskResponseDTO>> GetByIdAsync(Guid id);
+    Task<OperationResult<bool>> DeleteAsync(Guid id);
+    Task<OperationResult<IEnumerable<TaskResponseDTO>>> GetByProjectIdAsync(Guid projectId);
+
+    // Helper method used in ProjectService
+    Task<bool> HasInProgressTasksForProjectAsync(Guid projectId);
 }

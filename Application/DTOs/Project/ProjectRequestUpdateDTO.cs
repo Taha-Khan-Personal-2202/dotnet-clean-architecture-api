@@ -1,9 +1,11 @@
-﻿using Domain.Entities;
+﻿namespace Application.DTOs.Project;
 
-namespace Application.DTOs.Project;
-public class ProjectRequestUpdateDTO : BaseEntity
+public sealed record ProjectRequestUpdateDTO
 {
-    public string Name { get; set; } = null!;
-    public string? Description { get; set; }
-    public bool IsArchived { get; set; }
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string? Description { get; init; }
+    public bool IsArchived { get; init; }
+    public bool IsActive { get; init; } = true;
+    public bool IsDeleted { get; init; }
 }
